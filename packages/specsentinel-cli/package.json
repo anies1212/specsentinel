@@ -1,0 +1,20 @@
+{
+  "name": "specsentinel",
+  "version": "0.1.0",
+  "description": "CLI to compare Flutter widget specs with Figma design",
+  "bin": {
+    "specsentinel": "dist/cli.js"
+  },
+  "main": "dist/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/cli.js"
+  },
+  "dependencies": {
+    "minimist": "^1.2.8"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}

@@ -1,0 +1,19 @@
+name: "SpecSentinel"
+description: "Compare Flutter widget specs against Figma"
+author: "SpecSentinel"
+runs:
+  using: "node20"
+  main: "dist/index.js"
+inputs:
+  flutter-test:
+    description: "Path to the Flutter spec test file"
+    required: false
+  output:
+    description: "Path where the Flutter test writes the JSON spec"
+    required: false
+  working-directory:
+    description: "Directory to run commands in"
+    required: false
+branding:
+  color: "blue"
+  icon: "eye"

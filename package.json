@@ -1,0 +1,13 @@
+{
+  "name": "specsentinel-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --ws",
+    "lint": "echo 'lint not configured'",
+    "test": "echo 'add tests'"
+  }
+}
