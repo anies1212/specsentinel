@@ -5,19 +5,31 @@ import { ScreenSpec } from "./types";
 
 export interface FlutterTestRunnerOptions {
   testPath: string;
-  outputPath: string;
+  screenName: string;
+  outputDir: string;
   cwd?: string;
 }
 
 export const runFlutterTestAndReadSpec = async (opts: FlutterTestRunnerOptions): Promise<ScreenSpec> => {
-  const { testPath, outputPath, cwd } = opts;
+  const { testPath, outputDir, screenName, cwd } = opts;
+  const baseDir = path.isAbsolute(outputDir) ? outputDir : path.join(cwd ?? process.cwd(), outputDir);
+  const outputPath = path.join(baseDir, `${screenName}.json`);
   await fs.mkdir(path.dirname(outputPath), { recursive: true });
 
   await new Promise<void>((resolve, reject) => {
-    const child = spawn("flutter", ["test", testPath], {
-      cwd: cwd ?? process.cwd(),
-      stdio: "inherit"
-    });
+    const child = spawn(
+      "flutter",
+      [
+        "test",
+        testPath,
+        `--dart-define=SPEC_SCREEN=${screenName}`,
+        `--dart-define=SPEC_OUTPUT_DIR=${outputDir}`
+      ],
+      {
+        cwd: cwd ?? process.cwd(),
+        stdio: "inherit"
+      }
+    );
 
     child.on("error", reject);
     child.on("exit", (code) => {

@@ -36,15 +36,15 @@ FIGMA_TOKEN=xxxxx npx specsentinel check \
   --screen LoginPage \
   --figma-file <FILE_KEY> \
   --figma-node <NODE_ID> \
-  --flutter-test ../../examples/flutter_app/test/spec/login_page_spec.dart \
-  --output ../../examples/flutter_app/build/specsentinel/LoginPage.json \
+  --flutter-test-path ../../examples/flutter_app/test/spec/specsentinel_spec.dart \
+  --output-dir ../../examples/flutter_app/build/specsentinel \
   --cwd ../../examples/flutter_app
 ```
 Flow:
-1) Runs `flutter test` (the provided test writes the JSON spec).
-2) Reads JSON into `ScreenSpec`.
+1) Runs `flutter test <flutter-test-path> --dart-define=SPEC_SCREEN=<screen> --dart-define=SPEC_OUTPUT_DIR=<dir>` so a single test can switch which screen to render.
+2) Reads `<output-dir>/<screen>.json` into `ScreenSpec`.
 3) Calls Figma REST API (`/v1/files/{fileKey}/nodes?ids={nodeId}`) to extract TEXT nodes, auto-layout padding, and itemSpacing.
-4) Compares actual vs expected, prints diffs to stderr, writes `<output>.diff.json`, and exits non-zero on mismatch.
+4) Compares actual vs expected, prints diffs to stderr, writes `<output-dir>/<screen>.diff.json`, and exits non-zero on mismatch.
 
 ## GitHub Action usage (`packages/specsentinel-action`)
 See `packages/specsentinel-action/action.yml`.
@@ -56,8 +56,8 @@ Action parses the comment and calls the CLI with:
 - `--screen` = `LoginPage`
 - `--figma-file` = `XXXXX`
 - `--figma-node` = `1234-567`
-- `--flutter-test` default: `test/spec/login_page_spec.dart`
-- `--output` default: `build/specsentinel/output.json`
+- `--flutter-test-path` from input (single shared test file)
+- `--output-dir` from input (default `build/specsentinel`)
 
 Workflow example (`.github/workflows/specsentinel.yml`):
 ```yaml
@@ -69,24 +69,24 @@ jobs:
   specsentinel:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: dart-lang/setup-dart@v1
-      - uses: subosito/flutter-action@v2
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+
+      - uses: subosito/flutter-action@fd55f4c5af5b953cc57a2be44cb082c8f6635e8e # v2.21.0
       - name: Install dependencies
         run: npm install
       - name: Run SpecSentinel
         uses: ./packages/specsentinel-action
-        env:
-          FIGMA_TOKEN: ${{ secrets.FIGMA_TOKEN }}
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          figma-token: ${{ secrets.FIGMA_TOKEN }}
+          flutter-test-path: test/spec/specsentinel_spec.dart
+          output-dir: build/specsentinel
           working-directory: examples/flutter_app
-          flutter-test: test/spec/login_page_spec.dart
-          output: build/specsentinel/LoginPage.json
 ```
 
 ## Flutter sample
 - Screen: `examples/flutter_app/lib/login_page.dart`
-- Widget test: `examples/flutter_app/test/spec/login_page_spec.dart` uses `tester.widgetList` to gather `Text`/`Padding`/`SizedBox` and write `build/specsentinel/LoginPage.json`.
+- Widget test: `examples/flutter_app/test/spec/specsentinel_spec.dart` switches on `SPEC_SCREEN` and writes `<SPEC_OUTPUT_DIR>/<screen>.json`.
 
 ## Limitations and future work
 - Current comparison is index-based (ordering differences are not handled).

@@ -5,6 +5,7 @@ import { FigmaClient } from "./figmaClient";
 import { runFlutterTestAndReadSpec } from "./flutterTestRunner";
 import { ScreenSpec } from "./types";
 import { promises as fs } from "fs";
+import path from "path";
 
 const die = (msg: string): never => {
   console.error(msg);
@@ -15,27 +16,35 @@ const parseArgs = () => {
   const argv = minimist(process.argv.slice(2));
   const cmd = argv._[0];
   if (cmd !== "check") {
-    die(`Unknown command. Usage: specsentinel check --screen <name> --figma-file <key> --figma-node <id> --flutter-test <path> --output <path>`);
+    die(
+      `Unknown command. Usage: specsentinel check --screen <name> --figma-file <key> --figma-node <id> --flutter-test-path <path> --output-dir <dir>`
+    );
   }
 
   const screen = argv.screen as string | undefined;
   const figmaFile = argv["figma-file"] as string | undefined;
   const figmaNode = argv["figma-node"] as string | undefined;
-  const flutterTest = argv["flutter-test"] as string | undefined;
-  const output = argv.output as string | undefined;
+  const flutterTestPath = argv["flutter-test-path"] as string | undefined;
+  const outputDir = (argv["output-dir"] as string | undefined) ?? "build/specsentinel";
   const workingDirectory = argv.cwd as string | undefined;
 
-  if (!screen || !figmaFile || !figmaNode || !flutterTest || !output) {
-    die(`Missing required args. Required: --screen --figma-file --figma-node --flutter-test --output`);
+  if (!screen || !figmaFile || !figmaNode || !flutterTestPath) {
+    die(`Missing required args. Required: --screen --figma-file --figma-node --flutter-test-path`);
   }
 
-  return { screen, figmaFile, figmaNode, flutterTest, output, workingDirectory };
+  return { screen, figmaFile, figmaNode, flutterTestPath, outputDir, workingDirectory };
 };
 
-const loadActualSpec = async (opts: { flutterTest: string; output: string; cwd?: string }): Promise<ScreenSpec> => {
+const loadActualSpec = async (opts: {
+  flutterTestPath: string;
+  outputDir: string;
+  screen: string;
+  cwd?: string;
+}): Promise<ScreenSpec> => {
   return runFlutterTestAndReadSpec({
-    testPath: opts.flutterTest,
-    outputPath: opts.output,
+    testPath: opts.flutterTestPath,
+    outputDir: opts.outputDir,
+    screenName: opts.screen,
     cwd: opts.cwd
   });
 };
@@ -51,10 +60,18 @@ const loadExpectedSpec = async (opts: { screen: string; figmaFile: string; figma
 };
 
 const main = async () => {
-  const { screen, figmaFile, figmaNode, flutterTest, output, workingDirectory } = parseArgs();
+  const { screen, figmaFile, figmaNode, flutterTestPath, outputDir, workingDirectory } = parseArgs();
+  const resolvedOutputDir = path.isAbsolute(outputDir)
+    ? outputDir
+    : path.join(workingDirectory ?? process.cwd(), outputDir);
 
-  console.log(`[SpecSentinel] Running flutter test: ${flutterTest}`);
-  const actual = await loadActualSpec({ flutterTest, output, cwd: workingDirectory });
+  console.log(`[SpecSentinel] Running flutter test: ${flutterTestPath}`);
+  const actual = await loadActualSpec({
+    flutterTestPath,
+    outputDir: resolvedOutputDir,
+    screen,
+    cwd: workingDirectory
+  });
 
   console.log(`[SpecSentinel] Fetching Figma spec: file=${figmaFile} node=${figmaNode}`);
   const expected = await loadExpectedSpec({ screen, figmaFile, figmaNode });
@@ -68,8 +85,7 @@ const main = async () => {
   } else {
     console.error("[SpecSentinel] ❌ Differences found:");
     result.diffs.forEach((d) => console.error(`- ${d.message}`));
-    // Save diffs alongside actual output for CI visibility.
-    const diffPath = output.replace(/\\.json$/, ".diff.json");
+    const diffPath = `${resolvedOutputDir}/${screen}.diff.json`;
     await fs.writeFile(diffPath, JSON.stringify(result.diffs, null, 2));
     die("Specs differ");
   }

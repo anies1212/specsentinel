@@ -5,11 +5,17 @@ runs:
   using: "node20"
   main: "dist/index.js"
 inputs:
-  flutter-test:
-    description: "Path to the Flutter spec test file"
-    required: false
-  output:
-    description: "Path where the Flutter test writes the JSON spec"
+  github-token:
+    description: "GitHub token (for future use such as commenting)"
+    required: true
+  figma-token:
+    description: "Figma personal access token"
+    required: true
+  flutter-test-path:
+    description: "Path to the single SpecSentinel Flutter widget test"
+    required: true
+  output-dir:
+    description: "Directory where the Flutter test writes screenName.json"
     required: false
   working-directory:
     description: "Directory to run commands in"

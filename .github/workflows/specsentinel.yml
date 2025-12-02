@@ -26,9 +26,9 @@ jobs:
 
       - name: Run SpecSentinel
         uses: ./packages/specsentinel-action
-        env:
-          FIGMA_TOKEN: ${{ secrets.FIGMA_TOKEN }}
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          figma-token: ${{ secrets.FIGMA_TOKEN }}
+          flutter-test-path: test/spec/specsentinel_spec.dart
+          output-dir: build/specsentinel
           working-directory: examples/flutter_app
-          flutter-test: test/spec/login_page_spec.dart
-          output: build/specsentinel/LoginPage.json
