@@ -1,18 +1,7 @@
 import { promises as fs } from "fs";
 import path from "path";
+import { numberFrom, toSnake } from "./helper";
 import { GapSpec, PaddingSpec, ScreenSpec, TextSpec } from "./types";
-
-const toSnake = (name: string): string =>
-  name
-    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
-    .replace(/[-\s]+/g, "_")
-    .toLowerCase();
-
-const numberFrom = (input: string | undefined): number | null => {
-  if (!input) return null;
-  const n = Number(input.trim());
-  return Number.isFinite(n) ? n : null;
-};
 
 export const findSourcePath = async (opts: { screen: string; cwd?: string; sourceRoot: string }): Promise<string> => {
   const root = path.resolve(opts.cwd ?? process.cwd(), opts.sourceRoot);
