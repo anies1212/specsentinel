@@ -5,7 +5,7 @@ SpecSentinel compares Flutter UI specs (exported from widget tests) with design 
 ## Architecture
 - Monorepo layout: `packages/specsentinel-cli` (CLI) / `packages/specsentinel-action` (GitHub Action) / `examples/flutter_app` (Flutter sample).
 - No Flutter wrapper widgets are required; a widget test writes a JSON spec.
-- CLI flow: run Flutter test → read JSON → call Figma API → compare → exit non-zero on diffs.
+- CLI flow: (static mode only) parse Dart source → call Figma API → compare → exit non-zero on diffs.
 - GitHub Action flow: parse `figma-spec:` PR comment → invoke CLI with parsed file/node → mark job success/failure based on comparison.
 
 ## JSON model (Flutter output)
@@ -36,14 +36,14 @@ FIGMA_TOKEN=xxxxx npx specsentinel check \
   --screen LoginPage \
   --figma-file <FILE_KEY> \
   --figma-node <NODE_ID> \
+  --mode static \
   --output-dir ../../examples/flutter_app/build/specsentinel \
   --cwd ../../examples/flutter_app
 ```
-Flow:
-1) Default (dynamic): runs `flutter test` for the screen’s `_test.dart`. If no `--flutter-test-path` is given, SpecSentinel searches `test/**/<screen>_test.dart` (screen lower_snake_case) under the working directory. Tests must write `<output-dir>/<screen>.json`.
-2) Static mode: add `--mode static`; SpecSentinel parses Dart source (by default `lib/**/<screen>.dart`) to extract literal Text/Padding/SizedBox values and writes `<output-dir>/<screen>.json`.
-3) Calls Figma REST API (`/v1/files/{fileKey}/nodes?ids={nodeId}`) to extract TEXT nodes, auto-layout padding, and itemSpacing.
-4) Compares actual vs expected, prints diffs to stderr, writes `<output-dir>/<screen>.diff.json`, and exits non-zero on mismatch.
+Flow (static only):
+1) Parses Dart source (default `lib/**/<screen>.dart`) to extract literal Text/Padding/SizedBox values and writes `<output-dir>/<screen>.json`.
+2) Calls Figma REST API (`/v1/files/{fileKey}/nodes?ids={nodeId}`) to extract TEXT nodes, auto-layout padding, and itemSpacing.
+3) Compares actual vs expected, prints diffs to stderr, writes `<output-dir>/<screen>.diff.json`, and exits non-zero on mismatch.
 
 ## GitHub Action usage (`packages/specsentinel-action`)
 See `packages/specsentinel-action/action.yml`.
@@ -55,7 +55,7 @@ Action parses the comment and calls the CLI with:
 - `--screen` = `LoginPage`
 - `--figma-file` = `XXXXX`
 - `--figma-node` = `1234-567`
-- Locates `test/**/login_page_test.dart` automatically (or you can pass `--flutter-test-path` to override)
+- `--mode` default: `static`
 - `--output-dir` from input (default `build/specsentinel`)
 
 Workflow example (`.github/workflows/specsentinel.yml`):
@@ -70,7 +70,6 @@ jobs:
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
 
-      - uses: subosito/flutter-action@fd55f4c5af5b953cc57a2be44cb082c8f6635e8e # v2.21.0
       - name: Install dependencies
         run: npm install
       - name: Run SpecSentinel
@@ -80,6 +79,7 @@ jobs:
           figma-token: ${{ secrets.FIGMA_TOKEN }}
           output-dir: build/specsentinel
           working-directory: examples/flutter_app
+          mode: static
 ```
 
 ## Flutter sample

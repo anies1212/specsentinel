@@ -56,10 +56,8 @@ const main = async () => {
   const figmaToken = core.getInput("figma-token", { required: true });
   const outputDir = core.getInput("output-dir") || "build/specsentinel";
   const workingDirectory = core.getInput("working-directory") || ".";
-  const mode = core.getInput("mode") || undefined;
-  const testRoot = core.getInput("test-root") || undefined;
+  const mode = core.getInput("mode") || "static";
   const sourceRoot = core.getInput("source-root") || undefined;
-  const flutterTestPath = core.getInput("flutter-test-path") || undefined;
   const sourcePath = core.getInput("source") || undefined;
 
   const args = [
@@ -75,8 +73,6 @@ const main = async () => {
     workingDirectory
   ];
   if (mode) args.push("--mode", mode);
-  if (flutterTestPath) args.push("--flutter-test-path", flutterTestPath);
-  if (testRoot) args.push("--test-root", testRoot);
   if (sourceRoot) args.push("--source-root", sourceRoot);
   if (sourcePath) args.push("--source", sourcePath);
 
