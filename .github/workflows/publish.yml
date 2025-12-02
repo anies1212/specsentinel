@@ -1,0 +1,44 @@
+name: Publish npm (specsentinel-cli)
+
+on:
+  workflow_dispatch:
+    inputs:
+      npm_tag:
+        description: "Optional npm dist-tag (default: latest)"
+        required: false
+        default: "latest"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install deps
+        run: npm install
+
+      - name: Build CLI
+        run: npm run build --workspace specsentinel-cli
+
+      - name: Publish specsentinel-cli
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_TAG: ${{ github.event.inputs.npm_tag }}
+        run: |
+          cd packages/specsentinel-cli
+          tag=${NPM_TAG:-latest}
+          npm publish --access public --tag "$tag"
