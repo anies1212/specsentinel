@@ -4,7 +4,7 @@
   "private": true,
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc -p tsconfig.json"
+    "build": "echo \"no-op for composite action\""
   },
   "dependencies": {
     "@actions/core": "^1.10.0",

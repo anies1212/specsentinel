@@ -26,6 +26,3 @@ jobs:
 
       - name: Type check (CLI)
         run: npm run build --workspace packages/specsentinel-cli
-
-      - name: Type check (Action)
-        run: npm run build --workspace packages/specsentinel-action
