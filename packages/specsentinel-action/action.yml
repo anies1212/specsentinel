@@ -11,6 +11,21 @@ inputs:
   figma-token:
     description: "Figma personal access token"
     required: true
+  mode:
+    description: "Comparison mode: dynamic (flutter test) or static (AST parse)"
+    required: false
+  flutter-test-path:
+    description: "Optional explicit path to a flutter test; otherwise discovered via screen name"
+    required: false
+  test-root:
+    description: "Root directory to search for tests (default: test)"
+    required: false
+  source:
+    description: "Explicit Dart source path for static mode"
+    required: false
+  source-root:
+    description: "Root directory to search for Dart sources (default: lib)"
+    required: false
   output-dir:
     description: "Directory where the Flutter test writes screenName.json"
     required: false

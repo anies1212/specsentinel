@@ -5,6 +5,7 @@ import path from "path";
 import { compareScreenSpec } from "./comparator";
 import { FigmaClient } from "./figmaClient";
 import { runFlutterTestAndReadSpec } from "./flutterTestRunner";
+import { extractStaticSpecFromSource, findSourcePath } from "./staticExtractor";
 import { ScreenSpec } from "./types";
 
 const die = (msg: string): never => {
@@ -17,7 +18,7 @@ const parseArgs = () => {
   const cmd = argv._[0];
   if (cmd !== "check") {
     die(
-      `Unknown command. Usage: specsentinel check --screen <name> --figma-file <key> --figma-node <id> [--flutter-test-path <path>] [--output-dir <dir>] [--test-root <dir>]`
+      `Unknown command. Usage: specsentinel check --screen <name> --figma-file <key> --figma-node <id> [--mode dynamic|static] [--flutter-test-path <path>] [--output-dir <dir>] [--test-root <dir>] [--source <path>] [--source-root <dir>]`
     );
   }
 
@@ -27,13 +28,31 @@ const parseArgs = () => {
   const flutterTestPath = argv["flutter-test-path"] as string | undefined;
   const outputDir = (argv["output-dir"] as string | undefined) ?? "build/specsentinel";
   const testRoot = (argv["test-root"] as string | undefined) ?? "test";
+  const sourceRoot = (argv["source-root"] as string | undefined) ?? "lib";
+  const sourcePath = argv["source"] as string | undefined;
   const workingDirectory = argv.cwd as string | undefined;
+  const mode = ((argv.mode as string | undefined) ?? "dynamic").toLowerCase();
 
   if (!screen || !figmaFile || !figmaNode) {
     die(`Missing required args. Required: --screen --figma-file --figma-node`);
   }
 
-  return { screen, figmaFile, figmaNode, flutterTestPath, outputDir, testRoot, workingDirectory };
+  if (mode !== "dynamic" && mode !== "static") {
+    die(`Unsupported mode "${mode}". Use dynamic or static.`);
+  }
+
+  return {
+    screen,
+    figmaFile,
+    figmaNode,
+    flutterTestPath,
+    outputDir,
+    testRoot,
+    sourceRoot,
+    sourcePath,
+    mode,
+    workingDirectory
+  };
 };
 
 const loadActualSpec = async (opts: {
@@ -100,25 +119,53 @@ const findTestPath = async (opts: {
 };
 
 const main = async () => {
-  const { screen, figmaFile, figmaNode, flutterTestPath, outputDir, testRoot, workingDirectory } = parseArgs();
+  const {
+    screen,
+    figmaFile,
+    figmaNode,
+    flutterTestPath,
+    outputDir,
+    testRoot,
+    sourceRoot,
+    sourcePath,
+    mode,
+    workingDirectory
+  } = parseArgs();
   const resolvedOutputDir = path.isAbsolute(outputDir)
     ? outputDir
     : path.join(workingDirectory ?? process.cwd(), outputDir);
-  const testPath =
-    flutterTestPath ??
-    (await findTestPath({
-      screen,
-      cwd: workingDirectory,
-      testRoot
-    }));
+  let actual: ScreenSpec;
 
-  console.log(`[SpecSentinel] Running flutter test: ${testPath}`);
-  const actual = await loadActualSpec({
-    flutterTestPath: testPath,
-    outputDir: resolvedOutputDir,
-    screen,
-    cwd: workingDirectory
-  });
+  if (mode === "dynamic") {
+    const testPath =
+      flutterTestPath ??
+      (await findTestPath({
+        screen,
+        cwd: workingDirectory,
+        testRoot
+      }));
+
+    console.log(`[SpecSentinel] Running flutter test: ${testPath}`);
+    actual = await loadActualSpec({
+      flutterTestPath: testPath,
+      outputDir: resolvedOutputDir,
+      screen,
+      cwd: workingDirectory
+    });
+  } else {
+    const resolvedSourcePath =
+      sourcePath ??
+      (await findSourcePath({
+        screen,
+        cwd: workingDirectory,
+        sourceRoot
+      }));
+    console.log(`[SpecSentinel] Extracting static spec from ${resolvedSourcePath}`);
+    actual = await extractStaticSpecFromSource({ screen, sourcePath: resolvedSourcePath });
+    const outputPath = path.join(resolvedOutputDir, `${screen}.json`);
+    await fs.mkdir(path.dirname(outputPath), { recursive: true });
+    await fs.writeFile(outputPath, JSON.stringify(actual, null, 2));
+  }
 
   console.log(`[SpecSentinel] Fetching Figma spec: file=${figmaFile} node=${figmaNode}`);
   const expected = await loadExpectedSpec({ screen, figmaFile, figmaNode });

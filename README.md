@@ -40,7 +40,10 @@ FIGMA_TOKEN=xxxxx npx specsentinel check \
   --cwd ../../examples/flutter_app
 ```
 Flow:
-1) Runs `flutter test` for the screen’s `_test.dart`. If no `--flutter-test-path` is given, SpecSentinel searches `test/**/<screen>_test.dart` (screen lowercased snake_case) under the working directory.\n+2) Reads `<output-dir>/<screen>.json` into `ScreenSpec` (tests are expected to write there themselves).\n+3) Calls Figma REST API (`/v1/files/{fileKey}/nodes?ids={nodeId}`) to extract TEXT nodes, auto-layout padding, and itemSpacing.\n+4) Compares actual vs expected, prints diffs to stderr, writes `<output-dir>/<screen>.diff.json`, and exits non-zero on mismatch.
+1) Default (dynamic): runs `flutter test` for the screen’s `_test.dart`. If no `--flutter-test-path` is given, SpecSentinel searches `test/**/<screen>_test.dart` (screen lower_snake_case) under the working directory. Tests must write `<output-dir>/<screen>.json`.
+2) Static mode: add `--mode static`; SpecSentinel parses Dart source (by default `lib/**/<screen>.dart`) to extract literal Text/Padding/SizedBox values and writes `<output-dir>/<screen>.json`.
+3) Calls Figma REST API (`/v1/files/{fileKey}/nodes?ids={nodeId}`) to extract TEXT nodes, auto-layout padding, and itemSpacing.
+4) Compares actual vs expected, prints diffs to stderr, writes `<output-dir>/<screen>.diff.json`, and exits non-zero on mismatch.
 
 ## GitHub Action usage (`packages/specsentinel-action`)
 See `packages/specsentinel-action/action.yml`.
