@@ -91,3 +91,6 @@ jobs:
 
 ## Env vars
 - `FIGMA_TOKEN`: Figma Personal Access Token (required).
+
+## Links
+- npm: https://www.npmjs.com/package/@anies1212/specsentinel
