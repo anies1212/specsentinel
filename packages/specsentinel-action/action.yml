@@ -26,6 +26,10 @@ runs:
         FILE_KEY: ${{ steps.parse.outputs.fileKey }}
         NODE_ID: ${{ steps.parse.outputs.nodeId }}
         EXTRA_ARGS: ${{ inputs.extra-args }}
+        INPUT_SOURCE_ROOT: ${{ inputs.source-root }}
+        INPUT_SOURCE: ${{ inputs.source }}
+        OUTPUT_DIR: ${{ inputs.output-dir }}
+        WORKING_DIR: ${{ inputs.working-directory }}
       run: |
         set -euo pipefail
         cmd=(npx --yes specsentinel check
@@ -33,8 +37,8 @@ runs:
           --figma-file "${FILE_KEY}"
           --figma-node "${NODE_ID}"
           --mode static
-          --output-dir "${{ inputs.output-dir }}"
-          --cwd "${{ inputs.working-directory }}"
+          --output-dir "${OUTPUT_DIR}"
+          --cwd "${WORKING_DIR}"
         )
         if [[ -n "${INPUT_SOURCE_ROOT}" ]]; then
           cmd+=("--source-root" "${INPUT_SOURCE_ROOT}")
@@ -48,9 +52,6 @@ runs:
           cmd+=("${extra[@]}")
         fi
         "${cmd[@]}"
-      env:
-        INPUT_SOURCE_ROOT: ${{ inputs.source-root }}
-        INPUT_SOURCE: ${{ inputs.source }}
 inputs:
   figma-token:
     description: "Figma personal access token"
