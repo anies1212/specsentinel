@@ -12,7 +12,18 @@ const die = (msg: string): never => {
   process.exit(1);
 };
 
-const parseArgs = () => {
+interface ParsedArgs {
+  screen: string;
+  figmaFile: string;
+  figmaNode: string;
+  outputDir: string;
+  sourceRoot: string;
+  sourcePath?: string;
+  mode: string;
+  workingDirectory?: string;
+}
+
+const parseArgs = (): ParsedArgs => {
   const argv = minimist(process.argv.slice(2));
   const cmd = argv._[0];
   if (cmd !== "check") {
@@ -21,14 +32,14 @@ const parseArgs = () => {
     );
   }
 
-  const screen = argv.screen as string | undefined;
-  const figmaFile = argv["figma-file"] as string | undefined;
-  const figmaNode = argv["figma-node"] as string | undefined;
-  const outputDir = (argv["output-dir"] as string | undefined) ?? "build/specsentinel";
-  const sourceRoot = (argv["source-root"] as string | undefined) ?? "lib";
-  const sourcePath = argv["source"] as string | undefined;
-  const workingDirectory = argv.cwd as string | undefined;
-  const mode = ((argv.mode as string | undefined) ?? "static").toLowerCase();
+  const screen = typeof argv.screen === "string" ? argv.screen : undefined;
+  const figmaFile = typeof argv["figma-file"] === "string" ? (argv["figma-file"] as string) : undefined;
+  const figmaNode = typeof argv["figma-node"] === "string" ? (argv["figma-node"] as string) : undefined;
+  const outputDir = (typeof argv["output-dir"] === "string" ? (argv["output-dir"] as string) : undefined) ?? "build/specsentinel";
+  const sourceRoot = (typeof argv["source-root"] === "string" ? (argv["source-root"] as string) : undefined) ?? "lib";
+  const sourcePath = typeof argv["source"] === "string" ? (argv["source"] as string) : undefined;
+  const workingDirectory = typeof argv.cwd === "string" ? (argv.cwd as string) : undefined;
+  const mode = ((typeof argv.mode === "string" ? (argv.mode as string) : "static")).toLowerCase();
 
   if (!screen || !figmaFile || !figmaNode) {
     die(`Missing required args. Required: --screen --figma-file --figma-node`);
@@ -39,9 +50,9 @@ const parseArgs = () => {
   }
 
   return {
-    screen,
-    figmaFile,
-    figmaNode,
+    screen: screen!,
+    figmaFile: figmaFile!,
+    figmaNode: figmaNode!,
     outputDir,
     sourceRoot,
     sourcePath,
@@ -56,7 +67,7 @@ const loadExpectedSpec = async (opts: { screen: string; figmaFile: string; figma
     die(`FIGMA_TOKEN env var is required`);
   }
 
-  const client = new FigmaClient({ token });
+  const client = new FigmaClient({ token: token as string });
   return client.fetchScreenSpec(opts.figmaFile, opts.figmaNode, opts.screen);
 };
 
