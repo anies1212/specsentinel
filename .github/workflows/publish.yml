@@ -43,7 +43,7 @@ jobs:
           npm version --no-git-tag-version "${VERSION}"
 
       - name: Build CLI
-        run: npm run build --workspace specsentinel-cli
+        run: npm run build --workspace packages/specsentinel-cli
 
       - name: Publish specsentinel-cli
         env:
