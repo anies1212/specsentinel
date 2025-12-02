@@ -7,6 +7,9 @@ on:
         description: "Optional npm dist-tag (default: latest)"
         required: false
         default: "latest"
+      version:
+        description: "Optional semver to publish (overrides package.json before publish)"
+        required: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -30,6 +33,14 @@ jobs:
 
       - name: Install deps
         run: npm install
+
+      - name: Set version (optional)
+        if: ${{ github.event.inputs.version != '' }}
+        env:
+          VERSION: ${{ github.event.inputs.version }}
+        run: |
+          cd packages/specsentinel-cli
+          npm version --no-git-tag-version "${VERSION}"
 
       - name: Build CLI
         run: npm run build --workspace specsentinel-cli
