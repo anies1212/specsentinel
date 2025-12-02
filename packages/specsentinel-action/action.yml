@@ -1,5 +1,5 @@
 name: "SpecSentinel"
-description: "Compare Flutter UI specs against Figma (static mode)"
+description: "Compare UI specs against Figma (static mode, stack-agnostic)"
 author: "SpecSentinel"
 runs:
   using: "composite"
@@ -25,17 +25,29 @@ runs:
         SCREEN: ${{ steps.parse.outputs.screen }}
         FILE_KEY: ${{ steps.parse.outputs.fileKey }}
         NODE_ID: ${{ steps.parse.outputs.nodeId }}
+        EXTRA_ARGS: ${{ inputs.extra-args }}
       run: |
         set -euo pipefail
-        npx --yes specsentinel check \
-          --screen "${SCREEN}" \
-          --figma-file "${FILE_KEY}" \
-          --figma-node "${NODE_ID}" \
-          --mode static \
-          --output-dir "${{ inputs.output-dir }}" \
-          --cwd "${{ inputs.working-directory }}" \
-          ${INPUT_SOURCE_ROOT:+--source-root "${INPUT_SOURCE_ROOT}"} \
-          ${INPUT_SOURCE:+--source "${INPUT_SOURCE}"}
+        cmd=(npx --yes specsentinel check
+          --screen "${SCREEN}"
+          --figma-file "${FILE_KEY}"
+          --figma-node "${NODE_ID}"
+          --mode static
+          --output-dir "${{ inputs.output-dir }}"
+          --cwd "${{ inputs.working-directory }}"
+        )
+        if [[ -n "${INPUT_SOURCE_ROOT}" ]]; then
+          cmd+=("--source-root" "${INPUT_SOURCE_ROOT}")
+        fi
+        if [[ -n "${INPUT_SOURCE}" ]]; then
+          cmd+=("--source" "${INPUT_SOURCE}")
+        fi
+        if [[ -n "${EXTRA_ARGS}" ]]; then
+          # shellcheck disable=SC2206
+          extra=( ${EXTRA_ARGS} )
+          cmd+=("${extra[@]}")
+        fi
+        "${cmd[@]}"
       env:
         INPUT_SOURCE_ROOT: ${{ inputs.source-root }}
         INPUT_SOURCE: ${{ inputs.source }}
@@ -58,6 +70,9 @@ inputs:
     description: "Root directory to search for Dart sources (default: lib)"
     required: false
     default: "lib"
+  extra-args:
+    description: "Additional args to pass through to the CLI (space-separated)"
+    required: false
 branding:
   color: "blue"
   icon: "eye"
