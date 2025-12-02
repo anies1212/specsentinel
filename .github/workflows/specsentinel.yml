@@ -1,0 +1,31 @@
+name: SpecSentinel
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  specsentinel:
+    # Only run when the comment is on a PR
+    if: github.event.issue.pull_request != null
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: subosito/flutter-action@v2
+      - name: Install npm dependencies
+        run: npm install
+      - name: Build SpecSentinel packages
+        run: npm run build --workspace specsentinel-cli --workspace specsentinel-action
+      - name: Run SpecSentinel
+        uses: ./packages/specsentinel-action
+        env:
+          FIGMA_TOKEN: ${{ secrets.FIGMA_TOKEN }}
+        with:
+          working-directory: examples/flutter_app
+          flutter-test: test/spec/login_page_spec.dart
+          output: build/specsentinel/LoginPage.json
