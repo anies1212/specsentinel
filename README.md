@@ -1,14 +1,14 @@
 # SpecSentinel (MVP)
 
-SpecSentinel は、Flutter の widget test で抽出した実装仕様と、Figma REST API から取得したデザイン仕様を比較し、ズレを CI で検知する OSS ツールです。TypeScript 製 CLI と GitHub Action を中心に構成され、PR コメントに含まれる Figma リンクをトリガーに自動検証します。
+SpecSentinel compares Flutter UI specs (exported from widget tests) with design specs from the Figma REST API to catch padding/gap/font/text mismatches in CI. It ships as a TypeScript CLI plus a GitHub Action that is triggered by PR comments containing Figma links.
 
-## アーキテクチャ概要
-- mono-repo: `packages/specsentinel-cli` (CLI) / `packages/specsentinel-action` (GitHub Action) / `examples/flutter_app` (Flutter サンプル)
-- Flutter 側にはラッパー Widget を追加せず、widget test が JSON を吐き出すのみ
-- CLI フロー: Flutter widget test 実行 → JSON 読み込み → Figma API 取得 → 差分比較 → 非ゼロ終了で CI に通知
-- GitHub Action フロー: PR コメント内の `figma-spec:` 行を解析し、CLI を呼び出して結果でジョブ成否を決定
+## Architecture
+- Monorepo layout: `packages/specsentinel-cli` (CLI) / `packages/specsentinel-action` (GitHub Action) / `examples/flutter_app` (Flutter sample).
+- No Flutter wrapper widgets are required; a widget test writes a JSON spec.
+- CLI flow: run Flutter test → read JSON → call Figma API → compare → exit non-zero on diffs.
+- GitHub Action flow: parse `figma-spec:` PR comment → invoke CLI with parsed file/node → mark job success/failure based on comparison.
 
-## JSON モデル (Flutter 出力)
+## JSON model (Flutter output)
 ```json
 {
   "screenName": "LoginPage",
@@ -25,9 +25,9 @@ SpecSentinel は、Flutter の widget test で抽出した実装仕様と、Figm
   ]
 }
 ```
-TypeScript 定義: `TextSpec`, `PaddingSpec`, `GapSpec`, `ScreenSpec` を `packages/specsentinel-cli/src/types.ts` に定義。
+TypeScript definitions live in `packages/specsentinel-cli/src/types.ts`: `TextSpec`, `PaddingSpec`, `GapSpec`, `ScreenSpec`.
 
-## CLI 使い方 (packages/specsentinel-cli)
+## CLI usage (`packages/specsentinel-cli`)
 ```
 cd packages/specsentinel-cli
 npm install
@@ -40,26 +40,26 @@ FIGMA_TOKEN=xxxxx npx specsentinel check \
   --output ../../examples/flutter_app/build/specsentinel/LoginPage.json \
   --cwd ../../examples/flutter_app
 ```
-処理内容:
-1) `flutter test` を実行（指定テストが JSON を保存）
-2) JSON を `ScreenSpec` として読み込み
-3) Figma REST API (`/v1/files/{fileKey}/nodes?ids={nodeId}`) をコールし、TEXT/auto-layout padding/itemSpacing を抽出
-4) Actual と Expected を比較し、差分を stderr に列挙。差分があれば `<output>.diff.json` を生成し非ゼロ終了
+Flow:
+1) Runs `flutter test` (the provided test writes the JSON spec).
+2) Reads JSON into `ScreenSpec`.
+3) Calls Figma REST API (`/v1/files/{fileKey}/nodes?ids={nodeId}`) to extract TEXT nodes, auto-layout padding, and itemSpacing.
+4) Compares actual vs expected, prints diffs to stderr, writes `<output>.diff.json`, and exits non-zero on mismatch.
 
-## GitHub Action 使い方 (packages/specsentinel-action)
-`packages/specsentinel-action/action.yml` を参照。
-PR コメント例:
+## GitHub Action usage (`packages/specsentinel-action`)
+See `packages/specsentinel-action/action.yml`.
+PR comment example:
 ```
 figma-spec: LoginPage https://www.figma.com/file/XXXXX?node-id=1234-567
 ```
-Action はコメントをパースし、以下を自動補完して CLI を呼びます。
+Action parses the comment and calls the CLI with:
 - `--screen` = `LoginPage`
 - `--figma-file` = `XXXXX`
 - `--figma-node` = `1234-567`
-- `--flutter-test` (input 既定: `test/spec/login_page_spec.dart`)
-- `--output` (input 既定: `build/specsentinel/output.json`)
+- `--flutter-test` default: `test/spec/login_page_spec.dart`
+- `--output` default: `build/specsentinel/output.json`
 
-`.github/workflows/specsentinel.yml` 例:
+Workflow example (`.github/workflows/specsentinel.yml`):
 ```yaml
 name: SpecSentinel
 on:
@@ -84,16 +84,15 @@ jobs:
           output: build/specsentinel/LoginPage.json
 ```
 
-## Flutter 側サンプル
-- 画面: `examples/flutter_app/lib/login_page.dart`
-- テスト: `examples/flutter_app/test/spec/login_page_spec.dart`
-  - `tester.widgetList` で Text/ Padding/ SizedBox を列挙し、`build/specsentinel/LoginPage.json` を生成
+## Flutter sample
+- Screen: `examples/flutter_app/lib/login_page.dart`
+- Widget test: `examples/flutter_app/test/spec/login_page_spec.dart` uses `tester.widgetList` to gather `Text`/`Padding`/`SizedBox` and write `build/specsentinel/LoginPage.json`.
 
-## 制約と拡張案
-- 現状はインデックス順比較（並び順差異は検出不可）
-- Figma 解析は TEXT / auto-layout padding / itemSpacing のみを簡略抽出
-- フォントサイズ比較は完全一致（必要に応じて許容誤差を拡張可能）
-- 今後: レイアウト階層のマッチング、色/weight/line-height 等の比較、差分レポートの HTML 化、コメント返信ボット追加、複数画面バッチ処理など
+## Limitations and future work
+- Current comparison is index-based (ordering differences are not handled).
+- Figma parsing is simplified to TEXT / auto-layout padding / itemSpacing.
+- Font-size comparison is strict equality (tolerance could be added).
+- Future ideas: layout tree matching, color/weight/line-height checks, HTML diff reports, reply comments, batch multiple screens.
 
-## 環境変数
-- `FIGMA_TOKEN`: Figma Personal Access Token (required)
+## Env vars
+- `FIGMA_TOKEN`: Figma Personal Access Token (required).
