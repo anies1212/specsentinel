@@ -4,8 +4,8 @@ SpecSentinel compares Flutter UI specs (exported from widget tests) with design 
 
 ## Architecture
 - Monorepo layout: `packages/specsentinel-cli` (CLI) / `packages/specsentinel-action` (GitHub Action) / `examples/flutter_app` (Flutter sample).
-- No Flutter wrapper widgets are required; a widget test writes a JSON spec.
-- CLI flow: (static mode only) parse Dart source → call Figma API → compare → exit non-zero on diffs.
+- Static-only in this revision: CLI parses Dart sources to emit specs; no test execution is required.
+- CLI flow: parse Dart source → call Figma API → compare → exit non-zero on diffs.
 - GitHub Action flow: parse `figma-spec:` PR comment → invoke CLI with parsed file/node → mark job success/failure based on comparison.
 
 ## JSON model (Flutter output)
