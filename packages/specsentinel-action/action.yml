@@ -11,9 +11,6 @@ inputs:
   figma-token:
     description: "Figma personal access token"
     required: true
-  flutter-test-path:
-    description: "Path to the single SpecSentinel Flutter widget test"
-    required: true
   output-dir:
     description: "Directory where the Flutter test writes screenName.json"
     required: false

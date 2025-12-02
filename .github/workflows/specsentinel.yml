@@ -29,6 +29,5 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           figma-token: ${{ secrets.FIGMA_TOKEN }}
-          flutter-test-path: test/spec/specsentinel_spec.dart
           output-dir: build/specsentinel
           working-directory: examples/flutter_app

@@ -36,15 +36,11 @@ FIGMA_TOKEN=xxxxx npx specsentinel check \
   --screen LoginPage \
   --figma-file <FILE_KEY> \
   --figma-node <NODE_ID> \
-  --flutter-test-path ../../examples/flutter_app/test/spec/specsentinel_spec.dart \
   --output-dir ../../examples/flutter_app/build/specsentinel \
   --cwd ../../examples/flutter_app
 ```
 Flow:
-1) Runs `flutter test <flutter-test-path> --dart-define=SPEC_SCREEN=<screen> --dart-define=SPEC_OUTPUT_DIR=<dir>` so a single test can switch which screen to render.
-2) Reads `<output-dir>/<screen>.json` into `ScreenSpec`.
-3) Calls Figma REST API (`/v1/files/{fileKey}/nodes?ids={nodeId}`) to extract TEXT nodes, auto-layout padding, and itemSpacing.
-4) Compares actual vs expected, prints diffs to stderr, writes `<output-dir>/<screen>.diff.json`, and exits non-zero on mismatch.
+1) Runs `flutter test` for the screen’s `_test.dart`. If no `--flutter-test-path` is given, SpecSentinel searches `test/**/<screen>_test.dart` (screen lowercased snake_case) under the working directory.\n+2) Reads `<output-dir>/<screen>.json` into `ScreenSpec` (tests are expected to write there themselves).\n+3) Calls Figma REST API (`/v1/files/{fileKey}/nodes?ids={nodeId}`) to extract TEXT nodes, auto-layout padding, and itemSpacing.\n+4) Compares actual vs expected, prints diffs to stderr, writes `<output-dir>/<screen>.diff.json`, and exits non-zero on mismatch.
 
 ## GitHub Action usage (`packages/specsentinel-action`)
 See `packages/specsentinel-action/action.yml`.
@@ -56,7 +52,7 @@ Action parses the comment and calls the CLI with:
 - `--screen` = `LoginPage`
 - `--figma-file` = `XXXXX`
 - `--figma-node` = `1234-567`
-- `--flutter-test-path` from input (single shared test file)
+- Locates `test/**/login_page_test.dart` automatically (or you can pass `--flutter-test-path` to override)
 - `--output-dir` from input (default `build/specsentinel`)
 
 Workflow example (`.github/workflows/specsentinel.yml`):
@@ -79,14 +75,13 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           figma-token: ${{ secrets.FIGMA_TOKEN }}
-          flutter-test-path: test/spec/specsentinel_spec.dart
           output-dir: build/specsentinel
           working-directory: examples/flutter_app
 ```
 
 ## Flutter sample
 - Screen: `examples/flutter_app/lib/login_page.dart`
-- Widget test: `examples/flutter_app/test/spec/specsentinel_spec.dart` switches on `SPEC_SCREEN` and writes `<SPEC_OUTPUT_DIR>/<screen>.json`.
+- Widget test: `examples/flutter_app/test/login_page_test.dart` writes `build/specsentinel/LoginPage.json`. Add more screens by creating corresponding `<screen>_test.dart` files that emit specs to the same output dir.
 
 ## Limitations and future work
 - Current comparison is index-based (ordering differences are not handled).

@@ -54,7 +54,6 @@ const main = async () => {
 
   const githubToken = core.getInput("github-token", { required: true });
   const figmaToken = core.getInput("figma-token", { required: true });
-  const flutterTestPath = core.getInput("flutter-test-path", { required: true });
   const outputDir = core.getInput("output-dir") || "build/specsentinel";
   const workingDirectory = core.getInput("working-directory") || ".";
 
@@ -65,8 +64,6 @@ const main = async () => {
     parsed.fileKey,
     "--figma-node",
     parsed.nodeId,
-    "--flutter-test-path",
-    flutterTestPath,
     "--output-dir",
     outputDir,
     "--cwd",
