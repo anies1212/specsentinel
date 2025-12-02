@@ -32,7 +32,7 @@ TypeScript definitions live in `packages/specsentinel-cli/src/types.ts`: `TextSp
 cd packages/specsentinel-cli
 npm install
 npm run build
-FIGMA_TOKEN=xxxxx npx specsentinel check \
+FIGMA_TOKEN=xxxxx npx @anies1212/specsentinel check \
   --screen LoginPage \
   --figma-file <FILE_KEY> \
   --figma-node <NODE_ID> \

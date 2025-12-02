@@ -1,11 +1,14 @@
 {
-  "name": "specsentinel",
+  "name": "@anies1212/specsentinel",
   "version": "0.1.0",
   "description": "CLI to compare Flutter widget specs with Figma design",
   "bin": {
     "specsentinel": "dist/cli.js"
   },
   "main": "dist/index.js",
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "commonjs",
   "scripts": {
     "build": "tsc -p tsconfig.json",
