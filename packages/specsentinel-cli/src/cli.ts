@@ -12,6 +12,11 @@ const die = (msg: string): never => {
   process.exit(1);
 };
 
+const requireString = (label: string, value: unknown): string => {
+  if (typeof value === "string" && value.length > 0) return value;
+  return die(`Missing required arg: ${label}`);
+};
+
 interface ParsedArgs {
   screen: string;
   figmaFile: string;
@@ -32,27 +37,23 @@ const parseArgs = (): ParsedArgs => {
     );
   }
 
-  const screen = typeof argv.screen === "string" ? argv.screen : undefined;
-  const figmaFile = typeof argv["figma-file"] === "string" ? (argv["figma-file"] as string) : undefined;
-  const figmaNode = typeof argv["figma-node"] === "string" ? (argv["figma-node"] as string) : undefined;
-  const outputDir = (typeof argv["output-dir"] === "string" ? (argv["output-dir"] as string) : undefined) ?? "build/specsentinel";
-  const sourceRoot = (typeof argv["source-root"] === "string" ? (argv["source-root"] as string) : undefined) ?? "lib";
-  const sourcePath = typeof argv["source"] === "string" ? (argv["source"] as string) : undefined;
-  const workingDirectory = typeof argv.cwd === "string" ? (argv.cwd as string) : undefined;
-  const mode = ((typeof argv.mode === "string" ? (argv.mode as string) : "static")).toLowerCase();
-
-  if (!screen || !figmaFile || !figmaNode) {
-    die(`Missing required args. Required: --screen --figma-file --figma-node`);
-  }
+  const screen = requireString("--screen", argv.screen);
+  const figmaFile = requireString("--figma-file", argv["figma-file"]);
+  const figmaNode = requireString("--figma-node", argv["figma-node"]);
+  const outputDir = (typeof argv["output-dir"] === "string" ? argv["output-dir"] : undefined) ?? "build/specsentinel";
+  const sourceRoot = (typeof argv["source-root"] === "string" ? argv["source-root"] : undefined) ?? "lib";
+  const sourcePath = typeof argv["source"] === "string" ? argv["source"] : undefined;
+  const workingDirectory = typeof argv.cwd === "string" ? argv.cwd : undefined;
+  const mode = (typeof argv.mode === "string" ? argv.mode : "static").toLowerCase();
 
   if (mode !== "static") {
     die(`Only static mode is supported. Received mode="${mode}".`);
   }
 
   return {
-    screen: screen!,
-    figmaFile: figmaFile!,
-    figmaNode: figmaNode!,
+    screen,
+    figmaFile,
+    figmaNode,
     outputDir,
     sourceRoot,
     sourcePath,
@@ -62,12 +63,9 @@ const parseArgs = (): ParsedArgs => {
 };
 
 const loadExpectedSpec = async (opts: { screen: string; figmaFile: string; figmaNode: string }): Promise<ScreenSpec> => {
-  const token = process.env.FIGMA_TOKEN;
-  if (!token) {
-    die(`FIGMA_TOKEN env var is required`);
-  }
+  const token = process.env.FIGMA_TOKEN ?? die(`FIGMA_TOKEN env var is required`);
 
-  const client = new FigmaClient({ token: token as string });
+  const client = new FigmaClient({ token });
   return client.fetchScreenSpec(opts.figmaFile, opts.figmaNode, opts.screen);
 };
 
