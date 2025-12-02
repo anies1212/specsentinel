@@ -70,12 +70,9 @@ jobs:
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
 
-      - name: Install dependencies
-        run: npm install
       - name: Run SpecSentinel
         uses: ./packages/specsentinel-action
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
           figma-token: ${{ secrets.FIGMA_TOKEN }}
           output-dir: build/specsentinel
           working-directory: examples/flutter_app
@@ -84,7 +81,7 @@ jobs:
 
 ## Flutter sample
 - Screen: `examples/flutter_app/lib/login_page.dart`
-- Widget test: `examples/flutter_app/test/login_page_test.dart` writes `build/specsentinel/LoginPage.json`. Add more screens by creating corresponding `<screen>_test.dart` files that emit specs to the same output dir.
+- Static mode: SpecSentinel parses `lib/login_page.dart` for literal Text/Padding/SizedBox values when run with `--mode static` (dynamic values are ignored). Add more screens by creating corresponding Dart files in `lib/**/`.
 
 ## Limitations and future work
 - Current comparison is index-based (ordering differences are not handled).

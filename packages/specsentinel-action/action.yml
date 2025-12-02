@@ -1,31 +1,63 @@
 name: "SpecSentinel"
-description: "Compare Flutter widget specs against Figma"
+description: "Compare Flutter UI specs against Figma (static mode)"
 author: "SpecSentinel"
 runs:
-  using: "node20"
-  main: "dist/index.js"
+  using: "composite"
+  steps:
+    - name: Parse figma-spec comment
+      id: parse
+      shell: bash
+      run: |
+        body=$(jq -r '.comment.body // ""' "$GITHUB_EVENT_PATH")
+        if [[ "$body" =~ ^[[:space:]]*figma-spec:[[:space:]]*([A-Za-z0-9_-]+)[[:space:]]+https://www\.figma\.com/file/([A-Za-z0-9]+)[^?[:space:]]*\?node-id=([A-Za-z0-9:-]+) ]]; then
+          echo "screen=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
+          echo "fileKey=${BASH_REMATCH[2]}" >> "$GITHUB_OUTPUT"
+          echo "nodeId=${BASH_REMATCH[3]}" >> "$GITHUB_OUTPUT"
+        else
+          echo "No figma-spec line found in comment, skipping."
+          exit 78
+        fi
+
+    - name: Run SpecSentinel (static)
+      shell: bash
+      env:
+        FIGMA_TOKEN: ${{ inputs.figma-token }}
+        SCREEN: ${{ steps.parse.outputs.screen }}
+        FILE_KEY: ${{ steps.parse.outputs.fileKey }}
+        NODE_ID: ${{ steps.parse.outputs.nodeId }}
+      run: |
+        set -euo pipefail
+        npx --yes specsentinel check \
+          --screen "${SCREEN}" \
+          --figma-file "${FILE_KEY}" \
+          --figma-node "${NODE_ID}" \
+          --mode static \
+          --output-dir "${{ inputs.output-dir }}" \
+          --cwd "${{ inputs.working-directory }}" \
+          ${INPUT_SOURCE_ROOT:+--source-root "${INPUT_SOURCE_ROOT}"} \
+          ${INPUT_SOURCE:+--source "${INPUT_SOURCE}"}
+      env:
+        INPUT_SOURCE_ROOT: ${{ inputs.source-root }}
+        INPUT_SOURCE: ${{ inputs.source }}
 inputs:
-  github-token:
-    description: "GitHub token (for future use such as commenting)"
-    required: true
   figma-token:
     description: "Figma personal access token"
     required: true
-  mode:
-    description: "Comparison mode (static only for now)"
+  output-dir:
+    description: "Directory where the spec JSON is written (default: build/specsentinel)"
     required: false
+    default: "build/specsentinel"
+  working-directory:
+    description: "Directory to run commands in"
+    required: false
+    default: "."
   source:
     description: "Explicit Dart source path for static mode"
     required: false
   source-root:
     description: "Root directory to search for Dart sources (default: lib)"
     required: false
-  output-dir:
-    description: "Directory where the Flutter test writes screenName.json"
-    required: false
-  working-directory:
-    description: "Directory to run commands in"
-    required: false
+    default: "lib"
 branding:
   color: "blue"
   icon: "eye"
